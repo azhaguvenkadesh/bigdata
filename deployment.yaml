@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bigdata-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bigdata-lab
+  template:
+    metadata:
+      labels:
+        app: bigdata-lab
+    spec:
+      containers:
+        - name: bigdata-lab
+          image: your-registry/bigdata-lab:latest
+          ports:
+            - containerPort: 8080 # code-server
+          resources:
+            limits:
+              memory: "16Gi"
+              cpu: "4"
+            requests:
+              memory: "8Gi"
+              cpu: "2"
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+      volumes:
+        - name: data
+          emptyDir: {}
