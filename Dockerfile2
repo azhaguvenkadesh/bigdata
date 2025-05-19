@@ -1,0 +1,103 @@
+# Base image with code-server
+FROM codercom/code-server:latest
+
+# Switch to root to install packages
+USER root
+
+# Install essential dependencies
+RUN apt-get update && apt-get install -y \
+    openjdk-11-jdk \
+    python3-pip \
+    curl \
+    wget \
+    git \
+    maven \
+    scala \
+    net-tools \
+    netcat \
+    unzip \
+    nano \
+    libmysql-java \
+    libsnappy-dev \
+    libkrb5-dev \
+    build-essential \
+    supervisor \
+    && apt-get clean
+
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV PATH=$PATH:$JAVA_HOME/bin
+
+# Set environment paths for common tools
+ENV HADOOP_VERSION=3.3.3
+ENV HIVE_VERSION=3.1.3
+ENV SPARK_VERSION=3.5.0
+ENV OOZIE_VERSION=5.2.1
+ENV SQOOP_VERSION=1.4.7
+ENV AIRFLOW_VERSION=2.9.2
+ENV KAFKA_VERSION=3.7.2
+ENV SCALA_VERSION=2.12.18
+ENV HUE_VERSION=4.11.0
+
+# Create a workspace directory
+WORKDIR /opt
+
+# Install Hadoop
+RUN wget https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz && \
+    tar -xzf hadoop-${HADOOP_VERSION}.tar.gz && \
+    rm hadoop-${HADOOP_VERSION}.tar.gz && \
+    mv hadoop-${HADOOP_VERSION} hadoop
+
+ENV HADOOP_HOME=/opt/hadoop
+ENV PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+# Install Hive
+RUN wget https://downloads.apache.org/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz && \
+    tar -xzf apache-hive-${HIVE_VERSION}-bin.tar.gz && \
+    rm apache-hive-${HIVE_VERSION}-bin.tar.gz && \
+    mv apache-hive-${HIVE_VERSION}-bin hive
+
+ENV HIVE_HOME=/opt/hive
+ENV PATH=$PATH:$HIVE_HOME/bin
+
+# Install Spark
+RUN wget https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    rm spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    mv spark-${SPARK_VERSION}-bin-hadoop3 spark
+
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+
+# Install Sqoop
+RUN wget https://downloads.apache.org/sqoop/${SQOOP_VERSION}/sqoop-${SQOOP_VERSION}.bin__hadoop-2.6.0.tar.gz && \
+    tar -xzf sqoop-${SQOOP_VERSION}.bin__hadoop-2.6.0.tar.gz && \
+    rm sqoop-${SQOOP_VERSION}.bin__hadoop-2.6.0.tar.gz && \
+    mv sqoop-${SQOOP_VERSION}.bin__hadoop-2.6.0 sqoop
+
+ENV SQOOP_HOME=/opt/sqoop
+ENV PATH=$PATH:$SQOOP_HOME/bin
+
+# Install Oozie (requires build)
+# Use prebuilt binary or build from source as needed. Placeholders shown here.
+
+# Install Kafka
+RUN wget https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz && \
+    tar -xzf kafka_2.13-${KAFKA_VERSION}.tgz && \
+    rm kafka_2.13-${KAFKA_VERSION}.tgz && \
+    mv kafka_2.13-${KAFKA_VERSION} kafka
+
+ENV KAFKA_HOME=/opt/kafka
+ENV PATH=$PATH:$KAFKA_HOME/bin
+
+# Install Airflow
+RUN pip3 install apache-airflow==${AIRFLOW_VERSION} --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-3.10.txt"
+
+# Install Hue (optional: might need build tools and node)
+# Placeholder, recommend setting up Hue externally or in separate service for simplicity
+
+# Add entrypoint to start code-server and services
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8080
+
+CMD ["/usr/bin/supervisord"]
